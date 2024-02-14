@@ -1,4 +1,7 @@
 
+using Microsoft.EntityFrameworkCore;
+using ReactAuthApp.Server.Data;
+
 namespace ReactAuthApp.Server
 {
 	public class Program
@@ -6,6 +9,11 @@ namespace ReactAuthApp.Server
 		public static void Main(string[] args)
 		{
 			var builder = WebApplication.CreateBuilder(args);
+
+			var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection") 
+				?? throw new InvalidOperationException("No ApplicationDbContextConnection in appsettings");
+
+			builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));	
 
 			// Add services to the container.
 
