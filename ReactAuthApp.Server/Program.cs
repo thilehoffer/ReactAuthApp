@@ -1,6 +1,8 @@
 
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ReactAuthApp.Server.Data;
+using System.Security.Claims;
 
 namespace ReactAuthApp.Server
 {
@@ -13,7 +15,13 @@ namespace ReactAuthApp.Server
 			var connectionString = builder.Configuration.GetConnectionString("ApplicationDbContextConnection") 
 				?? throw new InvalidOperationException("No ApplicationDbContextConnection in appsettings");
 
-			builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));	
+			builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+
+			builder.Services.AddAuthorization();
+			builder.Services.AddIdentityApiEndpoints<ApplicationUser>().
+				AddEntityFrameworkStores<ApplicationDbContext>();
+
+
 
 			// Add services to the container.
 
@@ -26,6 +34,22 @@ namespace ReactAuthApp.Server
 
 			app.UseDefaultFiles();
 			app.UseStaticFiles();
+			app.MapIdentityApi<ApplicationUser>();
+
+			app.MapPost("/logout", async (SignInManager<ApplicationUser> signInManager) =>
+			{
+				await signInManager.SignOutAsync();
+				return Results.Ok();
+
+			}).RequireAuthorization();
+
+
+			app.MapGet("/pingauth", (ClaimsPrincipal user) => { 
+				var email = user.FindFirstValue(ClaimTypes.Email);
+				return Results.Json(new { Eamil = email });
+			
+			}).RequireAuthorization();
+
 
 			// Configure the HTTP request pipeline.
 			if (app.Environment.IsDevelopment())
